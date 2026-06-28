@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getAccessToken, setAccessToken, clearAccessToken } from '../utils/tokenManager';
 
 const API = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 30000,
   withCredentials: true, // sends httpOnly refresh cookie automatically
 });

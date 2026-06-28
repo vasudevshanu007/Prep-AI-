@@ -1,0 +1,68 @@
+version: '3.9'
+
+services:
+  # ── MongoDB ──────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7-jammy
+    container_name: prepai_mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: prepai
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - '27017:27017'
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend ───────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: prepai_backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/prepai
+      PORT: 5000
+    ports:
+      - '5000:5000'
+    volumes:
+      - uploads:/app/uploads
+      - logs:/app/logs
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:5000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Frontend (served via Vite preview / static) ────────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: prepai_frontend
+    working_dir: /app
+    command: sh -c "npm ci && npm run build && npm run preview -- --host 0.0.0.0 --port 4173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - '4173:4173'
+    environment:
+      VITE_API_URL: http://backend:5000
+
+volumes:
+  mongo_data:
+  uploads:
+  logs:

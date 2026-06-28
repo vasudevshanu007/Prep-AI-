@@ -17,19 +17,19 @@ const REFRESH_COOKIE = 'prepai_refresh';
 
 const setRefreshCookie = (res, token) => {
   res.cookie(REFRESH_COOKIE, token, {
-    httpOnly: true,                                        // not readable by JS
-    secure: process.env.NODE_ENV === 'production',         // HTTPS-only in prod
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',                                      // required for cross-domain (Vercel + Render)
     maxAge: 7 * 24 * 60 * 60 * 1000,                      // 7 days
-    path: '/',                                             // accessible on all paths
+    path: '/',
   });
 };
 
 const clearRefreshCookie = (res) => {
   res.clearCookie(REFRESH_COOKIE, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    secure: true,
+    sameSite: 'none',
     path: '/',
   });
 };
